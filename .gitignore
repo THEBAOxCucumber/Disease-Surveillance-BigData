@@ -8,5 +8,5 @@
 __pycache__/
 *.pyc
 
-# Raw data
-data/raw/
+# Raw data ขอแนบไปด้วยนะ ไฟล์มันไม่ได้ใหญ่
+# data/raw/ 

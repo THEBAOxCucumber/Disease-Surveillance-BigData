@@ -637,6 +637,21 @@ docs/data_sources.md
 
 ---
 
+# Data Lake and Airflow (Local Development)
+
+The local infrastructure uses Docker Compose, SeaweedFS as an S3-compatible raw data lake, and Apache Airflow with LocalExecutor. It lands the disease sample JSON files already extracted by `src/extract/extract_disease.py`; the DAG does not call the source API.
+
+1. Keep the existing `.env` (it contains the API token); add local service credentials from `.env.example` only if you want to override the development defaults. Never commit `.env`.
+2. Start the services: `docker compose up -d --build`
+3. Open Airflow at `http://localhost:8080` (default local login is `airflow` / `airflow-local-only`, unless overridden in `.env`), unpause the DAG if needed, then trigger `disease_raw_to_lake`.
+4. Browse SeaweedFS filer at `http://localhost:8888` or connect an S3 client to `http://localhost:8333` and inspect bucket `disease-surveillance`.
+
+Objects are written under `raw/disease/year=2568/` and `raw/disease/year=2569/`, with a checksum and manifest per year. Re-running the DAG is safe when the source bytes are unchanged; changed bytes at an existing key fail instead of silently replacing raw history. See `docs/data_lake_airflow.md` for details and operations.
+
+These Compose credentials are for local development only. Do not use the defaults in a shared or production environment.
+
+---
+
 # Current Project Status
 
 ## PART 1 — Development Phase
