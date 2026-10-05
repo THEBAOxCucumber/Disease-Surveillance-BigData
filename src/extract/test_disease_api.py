@@ -15,16 +15,13 @@ RESOURCES = {
 
 TOKEN = os.getenv("DATA_GO_TH_TOKEN")
 
-
-def get_token() -> str:
-    if TOKEN is None:
-        raise ValueError(
-            "ไม่พบ DATA_GO_TH_TOKEN กรุณาตรวจสอบไฟล์ .env"
-        )
-    return TOKEN
+if not TOKEN:
+    raise ValueError(
+        "ไม่พบ DATA_GO_TH_TOKEN กรุณาตรวจสอบไฟล์ .env"
+    )
 
 
-def run_api_test(year, resource_id):
+def test_api(year, resource_id):
     print("=" * 60)
     print(f"Testing Disease API ปี {year}")
     print("=" * 60)
@@ -34,7 +31,9 @@ def run_api_test(year, resource_id):
         "limit": 5,
     }
 
-    headers = {"api-key": get_token()}
+    headers = {
+        "api-key": TOKEN
+    }
 
     try:
         response = requests.get(
@@ -87,6 +86,5 @@ def run_api_test(year, resource_id):
     print()
 
 
-if __name__ == "__main__":
-    for year, resource_id in RESOURCES.items():
-        run_api_test(year, resource_id)
+for year, resource_id in RESOURCES.items():
+    test_api(year, resource_id)
