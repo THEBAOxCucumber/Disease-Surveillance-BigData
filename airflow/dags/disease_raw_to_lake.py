@@ -11,12 +11,16 @@ from pathlib import Path
 
 import boto3
 from botocore.exceptions import ClientError
-from airflow import DAG
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
-from airflow.operators.python import PythonOperator
+from airflow import DAG  # pyright: ignore[reportAttributeAccessIssue, reportMissingImports]
+from airflow.operators.trigger_dagrun import (  # pyright: ignore[reportMissingImports]
+    TriggerDagRunOperator,
+)
+from airflow.operators.python import PythonOperator  # pyright: ignore[reportMissingImports]
 
 
 YEARS = ("2568", "2569")
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+JSON_CONTENT_TYPE = "application/json"
 POPULATION_REFERENCE_DIR = Path("disease") / "reference"
 POPULATION_FIELDS = ("ปี", "เขต", "ประชากรรวม")
 EXPECTED_BANGKOK_DISTRICTS = {
@@ -46,7 +50,7 @@ def _s3_client():
         endpoint_url=os.environ["S3_ENDPOINT"],
         aws_access_key_id=os.environ["S3_ACCESS_KEY"],
         aws_secret_access_key=os.environ["S3_SECRET_KEY"],
-        region_name="us-east-1",
+        region_name=AWS_REGION,
     )
 
 
@@ -98,7 +102,7 @@ def land_sample(year: str):
             Bucket=bucket,
             Key=key,
             Body=payload,
-            ContentType="application/json",
+            ContentType=JSON_CONTENT_TYPE,
             Metadata={"sha256": digest, "record-count": str(len(records)), "source-year-be": year},
         )
 
@@ -118,7 +122,7 @@ def land_sample(year: str):
         Bucket=bucket,
         Key=f"raw/disease/year={year}/_metadata/{source.stem}.manifest.json",
         Body=json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8"),
-        ContentType="application/json",
+        ContentType=JSON_CONTENT_TYPE,
     )
     print(f"Landed {len(records)} records: s3://{bucket}/{key}; sha256={digest}")
 
@@ -238,7 +242,7 @@ def land_population(year: str):
         Bucket=bucket,
         Key=f"raw/population/year={year}/_metadata/{source.stem}.manifest.json",
         Body=json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8"),
-        ContentType="application/json",
+        ContentType=JSON_CONTENT_TYPE,
     )
     print(
         f"Landed {record_count} population rows: "
@@ -263,20 +267,20 @@ with DAG(
             python_callable=land_sample,
             op_kwargs={"year": data_year},
         )
-        create_bucket >> upload
+        create_bucket >> upload  # pyright: ignore[reportUnusedExpression]
         population_upload = PythonOperator(
             task_id=f"land_population_{data_year}",
             python_callable=land_population,
             op_kwargs={"year": data_year},
         )
-        create_bucket >> population_upload
+        create_bucket >> population_upload  # pyright: ignore[reportUnusedExpression]
 
     trigger_spark = TriggerDagRunOperator(
         task_id="trigger_spark_processing",
         trigger_dag_id="spark_processing",
         wait_for_completion=False,
     )
-    create_bucket >> trigger_spark
+    create_bucket >> trigger_spark  # pyright: ignore[reportUnusedExpression]
     for data_year in YEARS:
         trigger_spark.set_upstream(
             dag.task_dict[f"land_disease_{data_year}"]
